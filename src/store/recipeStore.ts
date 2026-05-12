@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import type { Recipe, RecipeDraft, Tag, ViewMode } from '../types/recipe';
+import type { CookbookExportData, ImportMode } from '../utils/importExport';
+import { createCookbookExportData } from '../utils/importExport';
 import { loadRecipes, saveRecipes, type PersistedRecipeState } from '../utils/storage';
 
 type RecipeStore = {
@@ -16,6 +18,9 @@ type RecipeStore = {
   addTag: (name: string) => Promise<void>;
   renameTag: (id: string, name: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
+  exportData: () => CookbookExportData;
+  importData: (data: CookbookExportData, mode: ImportMode) => Promise<void>;
+  resetApp: () => Promise<void>;
   hydrate: () => Promise<void>;
 };
 
@@ -58,6 +63,38 @@ function sanitizeRecipeTags(recipes: Recipe[], tags: Tag[]): Recipe[] {
     ...recipe,
     tagIds: recipe.tagIds.filter((tagId) => validTagIds.has(tagId)),
   }));
+}
+
+function dedupeTags(tags: Tag[]): Tag[] {
+  const uniqueTags: Tag[] = [];
+  const seenIds = new Set<string>();
+
+  for (const tag of tags) {
+    if (seenIds.has(tag.id)) {
+      continue;
+    }
+
+    seenIds.add(tag.id);
+    uniqueTags.push(tag);
+  }
+
+  return uniqueTags;
+}
+
+function dedupeRecipes(recipes: Recipe[]): Recipe[] {
+  const uniqueRecipes: Recipe[] = [];
+  const seenIds = new Set<string>();
+
+  for (const recipe of recipes) {
+    if (seenIds.has(recipe.id)) {
+      continue;
+    }
+
+    seenIds.add(recipe.id);
+    uniqueRecipes.push(recipe);
+  }
+
+  return uniqueRecipes;
 }
 
 export const useRecipeStore = create<RecipeStore>((set, get) => ({
@@ -194,6 +231,42 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
         ...recipe,
         tagIds: recipe.tagIds.filter((tagId) => tagId !== id),
       })),
+    };
+
+    set(nextState);
+    await persistState(nextState);
+  },
+  exportData: () => {
+    const currentState = buildState(get());
+    return createCookbookExportData(currentState.recipes, currentState.tags);
+  },
+  importData: async (data, mode) => {
+    const currentState = buildState(get());
+    const importedTags = dedupeTags(data.tags);
+    const importedRecipes = dedupeRecipes(data.recipes);
+
+    const nextTags =
+      mode === 'replace' ? importedTags : dedupeTags([...currentState.tags, ...importedTags]);
+    const nextRecipes =
+      mode === 'replace'
+        ? importedRecipes
+        : dedupeRecipes([...currentState.recipes, ...importedRecipes]);
+
+    const nextState: PersistedRecipeState = {
+      ...currentState,
+      tags: nextTags,
+      recipes: sanitizeRecipeTags(nextRecipes, nextTags),
+    };
+
+    set(nextState);
+    await persistState(nextState);
+  },
+  resetApp: async () => {
+    const nextState: PersistedRecipeState = {
+      recipes: [],
+      tags: [],
+      viewMode: 'list',
+      managementMode: false,
     };
 
     set(nextState);

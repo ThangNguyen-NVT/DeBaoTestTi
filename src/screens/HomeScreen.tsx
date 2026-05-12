@@ -44,6 +44,14 @@ function toRows<T>(items: T[], size: number): T[][] {
   return rows;
 }
 
+function normalizeSearch(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase('vi')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 export function HomeScreen({ navigation }: Props) {
   const recipes = useRecipeStore((state) => state.recipes);
   const tags = useRecipeStore((state) => state.tags);
@@ -60,6 +68,7 @@ export function HomeScreen({ navigation }: Props) {
   const [newTagName, setNewTagName] = useState('');
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingTagName, setEditingTagName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sortedRecipes = useMemo(
     () => [...recipes].sort((left, right) => right.createdAt - left.createdAt),
@@ -70,6 +79,7 @@ export function HomeScreen({ navigation }: Props) {
     [tags]
   );
   const isGrid = viewMode === 'grid';
+  const normalizedSearchQuery = useMemo(() => normalizeSearch(searchQuery), [searchQuery]);
 
   useEffect(() => {
     if (selectedTagId === ALL_TAG_ID) {
@@ -82,13 +92,23 @@ export function HomeScreen({ navigation }: Props) {
     }
   }, [selectedTagId, tags]);
 
-  const filteredRecipes = useMemo(() => {
-    if (selectedTagId === ALL_TAG_ID) {
+  const filteredBySearchRecipes = useMemo(() => {
+    if (!normalizedSearchQuery) {
       return sortedRecipes;
     }
 
-    return sortedRecipes.filter((recipe) => recipe.tagIds.includes(selectedTagId));
-  }, [selectedTagId, sortedRecipes]);
+    return sortedRecipes.filter((recipe) =>
+      normalizeSearch(recipe.name).includes(normalizedSearchQuery)
+    );
+  }, [normalizedSearchQuery, sortedRecipes]);
+
+  const filteredRecipes = useMemo(() => {
+    if (selectedTagId === ALL_TAG_ID) {
+      return filteredBySearchRecipes;
+    }
+
+    return filteredBySearchRecipes.filter((recipe) => recipe.tagIds.includes(selectedTagId));
+  }, [filteredBySearchRecipes, selectedTagId]);
 
   const groups = useMemo<RecipeGroup[]>(() => {
     if (selectedTagId !== ALL_TAG_ID) {
@@ -110,11 +130,11 @@ export function HomeScreen({ navigation }: Props) {
       .map((tag) => ({
         id: tag.id,
         name: tag.name,
-        recipes: sortedRecipes.filter((recipe) => recipe.tagIds.includes(tag.id)),
+        recipes: filteredRecipes.filter((recipe) => recipe.tagIds.includes(tag.id)),
       }))
       .filter((group) => group.recipes.length > 0);
 
-    const untaggedRecipes = sortedRecipes.filter((recipe) => recipe.tagIds.length === 0);
+    const untaggedRecipes = filteredRecipes.filter((recipe) => recipe.tagIds.length === 0);
 
     if (untaggedRecipes.length === 0) {
       return tagGroups;
@@ -128,7 +148,7 @@ export function HomeScreen({ navigation }: Props) {
         recipes: untaggedRecipes,
       },
     ];
-  }, [filteredRecipes, selectedTagId, sortedRecipes, sortedTags]);
+  }, [filteredRecipes, selectedTagId, sortedTags]);
 
   const handleOpenRecipe = useCallback(
     (recipeId: string) => {
@@ -139,6 +159,10 @@ export function HomeScreen({ navigation }: Props) {
 
   const handleAddRecipe = useCallback(() => {
     navigation.navigate('AddEditRecipe');
+  }, [navigation]);
+
+  const handleOpenSettings = useCallback(() => {
+    navigation.navigate('Settings');
   }, [navigation]);
 
   const handleListMode = useCallback(() => {
@@ -208,26 +232,58 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.title}>Your Recipes</Text>
           <Text style={styles.subtitle}>Offline-first, always available.</Text>
         </View>
-        <Pressable
-          onPress={handleToggleManagementMode}
-          style={({ pressed }) => [
-            styles.manageToggle,
-            managementMode && styles.manageToggleActive,
-            pressed && styles.toggleButtonPressed,
-          ]}
-        >
-          <Text
-            style={[
-              styles.manageToggleLabel,
-              managementMode && styles.manageToggleLabelActive,
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={handleOpenSettings}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.toggleButtonPressed,
             ]}
           >
-            {managementMode ? 'Done' : 'Manage'}
-          </Text>
-        </Pressable>
+            <Text style={styles.settingsButtonLabel}>Settings</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleToggleManagementMode}
+            style={({ pressed }) => [
+              styles.manageToggle,
+              managementMode && styles.manageToggleActive,
+              pressed && styles.toggleButtonPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.manageToggleLabel,
+                managementMode && styles.manageToggleLabelActive,
+              ]}
+            >
+              {managementMode ? 'Done' : 'Manage'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.topControls}>
+        <View style={styles.searchContainer}>
+          <TextInput
+            onChangeText={setSearchQuery}
+            placeholder="Search recipes..."
+            placeholderTextColor="#94A3B8"
+            style={styles.searchInput}
+            value={searchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable
+              onPress={() => setSearchQuery('')}
+              style={({ pressed }) => [
+                styles.searchClearButton,
+                pressed && styles.toggleButtonPressed,
+              ]}
+            >
+              <Text style={styles.searchClearLabel}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+
         <View style={styles.toggle}>
           <Pressable
             onPress={handleListMode}
@@ -562,6 +618,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  headerActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
   inlineActionButton: {
     backgroundColor: '#E2E8F0',
     borderRadius: 8,
@@ -649,6 +710,42 @@ const styles = StyleSheet.create({
   tagChipRow: {
     columnGap: 8,
     paddingVertical: 4,
+  },
+  searchClearButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+  },
+  searchClearLabel: {
+    color: '#64748B',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  searchContainer: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+  },
+  searchInput: {
+    color: '#0F172A',
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 10,
+  },
+  settingsButton: {
+    backgroundColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  settingsButtonLabel: {
+    color: '#1E293B',
+    fontSize: 13,
+    fontWeight: '700',
   },
   tagInput: {
     backgroundColor: '#FFFFFF',

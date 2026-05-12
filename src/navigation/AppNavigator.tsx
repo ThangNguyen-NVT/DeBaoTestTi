@@ -7,11 +7,13 @@ import {
 import { AddEditRecipeScreen } from '../screens/AddEditRecipeScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { RecipeDetailScreen } from '../screens/RecipeDetailScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 
 export type RootStackParamList = {
   Home: undefined;
   RecipeDetail: { recipeId: string };
   AddEditRecipe: { recipeId?: string } | undefined;
+  Settings: undefined;
 };
 
 export type RootNavigationProp<RouteName extends keyof RootStackParamList> =
@@ -53,6 +55,11 @@ export default function AppNavigator() {
           name="AddEditRecipe"
           component={AddEditRecipeScreen}
           options={{ title: 'Add Recipe' }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ title: 'Settings' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
