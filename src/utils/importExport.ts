@@ -4,6 +4,7 @@ export const IMPORT_EXPORT_SCHEMA_VERSION = 1;
 
 export type CookbookExportData = {
   version: number;
+  // Unix timestamp in seconds.
   exportedAt: number;
   recipes: Recipe[];
   tags: Tag[];

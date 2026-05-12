@@ -45,6 +45,7 @@ function toRows<T>(items: T[], size: number): T[][] {
 }
 
 function normalizeSearch(value: string): string {
+  // Cookbook examples/content are Vietnamese-first, so we normalize with vi locale.
   return value
     .trim()
     .toLocaleLowerCase('vi')
