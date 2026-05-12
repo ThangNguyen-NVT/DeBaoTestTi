@@ -13,14 +13,26 @@ import {
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useRecipeStore } from '../store/recipeStore';
+import type { Recipe } from '../types/recipe';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddEditRecipe'>;
 
-let recipeSequence = 0;
+function createRecipeId(recipes: Recipe[]) {
+  const timestamp = Date.now();
+  const prefix = `recipe-${timestamp}-`;
+  const nextSequence =
+    recipes.reduce((highestSequence, recipe) => {
+      if (!recipe.id.startsWith(prefix)) {
+        return highestSequence;
+      }
 
-function createRecipeId() {
-  recipeSequence += 1;
-  return `recipe-${Date.now()}-${recipeSequence}`;
+      const sequence = Number(recipe.id.slice(prefix.length));
+      return Number.isNaN(sequence)
+        ? highestSequence
+        : Math.max(highestSequence, sequence);
+    }, 0) + 1;
+
+  return `${prefix}${nextSequence}`;
 }
 
 export function AddEditRecipeScreen({ navigation, route }: Props) {
@@ -71,7 +83,7 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
       return;
     }
 
-    const nextRecipeId = createRecipeId();
+    const nextRecipeId = createRecipeId(useRecipeStore.getState().recipes);
 
     await addRecipe({
       id: nextRecipeId,
