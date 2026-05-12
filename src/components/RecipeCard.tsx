@@ -52,35 +52,35 @@ const styles = StyleSheet.create({
   cardPressable: {
     flex: 1,
   },
+  listCard: {
+    minHeight: 64,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
   gridCard: {
     aspectRatio: 1.02,
     flex: 1,
     padding: 12,
   },
+  listPressable: {
+    justifyContent: 'center',
+  },
   gridPressable: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  gridTitle: {
-    textAlign: 'center',
-  },
-  listTitle: {
-    fontSize: 17,
-  },
-  pressed: {
-    opacity: 0.88,
   },
   title: {
     color: '#0F172A',
     fontSize: 16,
     fontWeight: '700',
   },
-  listCard: {
-    minHeight: 64,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  listTitle: {
+    fontSize: 17,
   },
-  listPressable: {
-    justifyContent: 'center',
+  gridTitle: {
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.88,
   },
 });
