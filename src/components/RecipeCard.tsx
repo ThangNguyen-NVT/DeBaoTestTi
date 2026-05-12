@@ -7,6 +7,7 @@ type RecipeCardProps = {
   instructions: string;
   createdAt: number;
   isGrid: boolean;
+  showManagementActions?: boolean;
   onPressRecipe: (recipeId: string) => void;
   onDeleteRecipe: (recipeId: string) => void;
 };
@@ -17,6 +18,7 @@ function RecipeCardComponent({
   instructions,
   createdAt,
   isGrid,
+  showManagementActions = true,
   onPressRecipe,
   onDeleteRecipe,
 }: RecipeCardProps) {
@@ -29,24 +31,20 @@ function RecipeCardComponent({
         <Text numberOfLines={2} style={styles.title}>
           {name}
         </Text>
-        <Text numberOfLines={isGrid ? 4 : 3} style={styles.instructions}>
-          {instructions}
-        </Text>
       </Pressable>
-      <View style={styles.footer}>
-        <Text style={styles.metaText}>
-          {new Date(createdAt).toLocaleDateString()}
-        </Text>
-        <Pressable
-          onPress={() => onDeleteRecipe(recipeId)}
-          style={({ pressed }) => [
-            styles.deleteButton,
-            pressed && styles.deleteButtonPressed,
-          ]}
-        >
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </Pressable>
-      </View>
+      {showManagementActions && (
+        <View style={styles.footer}>
+          <Pressable
+            onPress={() => onDeleteRecipe(recipeId)}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              pressed && styles.deleteButtonPressed,
+            ]}
+          >
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -89,9 +87,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   gridCard: {
     flexBasis: '48%',
@@ -99,15 +95,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     maxWidth: '48%',
     minHeight: 220,
-  },
-  instructions: {
-    color: '#475569',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  metaText: {
-    color: '#64748B',
-    fontSize: 12,
   },
   pressed: {
     opacity: 0.85,
