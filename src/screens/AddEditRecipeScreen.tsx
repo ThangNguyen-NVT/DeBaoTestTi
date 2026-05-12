@@ -16,6 +16,13 @@ import { useRecipeStore } from '../store/recipeStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddEditRecipe'>;
 
+let recipeSequence = 0;
+
+function createRecipeId() {
+  recipeSequence += 1;
+  return `recipe-${Date.now()}-${recipeSequence}`;
+}
+
 export function AddEditRecipeScreen({ navigation, route }: Props) {
   const recipeId = route.params?.recipeId;
   const recipe = useRecipeStore(
@@ -64,7 +71,7 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
       return;
     }
 
-    const nextRecipeId = `recipe-${Date.now()}`;
+    const nextRecipeId = createRecipeId();
 
     await addRecipe({
       id: nextRecipeId,
