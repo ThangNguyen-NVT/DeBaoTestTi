@@ -30,20 +30,14 @@ function persistState(state: PersistedRecipeState): Promise<void> {
 }
 
 function getTagId(tags: Tag[], timestamp: number): string {
-  const prefix = `tag-${timestamp}-`;
-  const nextSequence =
-    tags.reduce((highestSequence, tag) => {
-      if (!tag.id.startsWith(prefix)) {
-        return highestSequence;
-      }
+  const existingIds = new Set(tags.map((tag) => tag.id));
 
-      const sequence = Number(tag.id.slice(prefix.length));
-      return Number.isNaN(sequence)
-        ? highestSequence
-        : Math.max(highestSequence, sequence);
-    }, 0) + 1;
+  let nextId = `tag-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
+  while (existingIds.has(nextId)) {
+    nextId = `tag-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
+  }
 
-  return `${prefix}${nextSequence}`;
+  return nextId;
 }
 
 function buildState(state: RecipeStore): PersistedRecipeState {
