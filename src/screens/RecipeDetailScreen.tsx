@@ -106,7 +106,7 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
             <Text style={styles.primaryButtonText}>Edit Recipe</Text>
           </Pressable>
           <Pressable
-            onPress={() => void handleDelete()}
+            onPress={handleDelete}
             style={({ pressed }) => [
               styles.secondaryButton,
               pressed && styles.buttonPressed,

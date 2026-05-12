@@ -8,6 +8,8 @@ type RecipeCardProps = {
   onPressRecipe: (recipeId: string) => void;
 };
 
+const GRID_CARD_ASPECT_RATIO = 1.02;
+
 function RecipeCardComponent({
   recipeId,
   name,
@@ -58,7 +60,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   gridCard: {
-    aspectRatio: 1.02,
+    aspectRatio: GRID_CARD_ASPECT_RATIO,
     flex: 1,
     padding: 12,
   },
