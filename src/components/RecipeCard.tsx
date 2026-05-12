@@ -15,36 +15,23 @@ type RecipeCardProps = {
 function RecipeCardComponent({
   recipeId,
   name,
-  instructions,
-  createdAt,
   isGrid,
-  showManagementActions = true,
   onPressRecipe,
-  onDeleteRecipe,
 }: RecipeCardProps) {
   return (
-    <View style={[styles.card, isGrid && styles.gridCard]}>
+    <View style={[styles.card, isGrid ? styles.gridCard : styles.listCard]}>
       <Pressable
         onPress={() => onPressRecipe(recipeId)}
-        style={({ pressed }) => [styles.cardPressable, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.cardPressable,
+          isGrid ? styles.gridPressable : styles.listPressable,
+          pressed && styles.pressed,
+        ]}
       >
-        <Text numberOfLines={2} style={styles.title}>
+        <Text numberOfLines={2} style={[styles.title, isGrid ? styles.gridTitle : styles.listTitle]}>
           {name}
         </Text>
       </Pressable>
-      {showManagementActions && (
-        <View style={styles.footer}>
-          <Pressable
-            onPress={() => onDeleteRecipe(recipeId)}
-            style={({ pressed }) => [
-              styles.deleteButton,
-              pressed && styles.deleteButtonPressed,
-            ]}
-          >
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </Pressable>
-        </View>
-      )}
     </View>
   );
 }
@@ -53,11 +40,9 @@ export const RecipeCard = memo(RecipeCardComponent);
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
-    gap: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#0F172A',
@@ -70,38 +55,38 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardPressable: {
-    gap: 12,
-  },
-  deleteButton: {
-    borderRadius: 10,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  deleteButtonPressed: {
-    opacity: 0.75,
-  },
-  deleteButtonText: {
-    color: '#B91C1C',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'flex-end',
+    flex: 1,
   },
   gridCard: {
+    aspectRatio: 1,
     flexBasis: '48%',
     flexGrow: 0,
     flexShrink: 0,
     maxWidth: '48%',
-    minHeight: 220,
+    minHeight: 150,
+  },
+  gridPressable: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridTitle: {
+    textAlign: 'center',
+  },
+  listCard: {
+    minHeight: 84,
+  },
+  listPressable: {
+    justifyContent: 'center',
+  },
+  listTitle: {
+    fontSize: 18,
   },
   pressed: {
     opacity: 0.85,
   },
   title: {
     color: '#0F172A',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
 });
