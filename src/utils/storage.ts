@@ -1,20 +1,39 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { Recipe, ViewMode } from '../types/recipe';
+import type { Recipe, Tag, ViewMode } from '../types/recipe';
 
 const STORAGE_KEY = 'cookbook-os/state';
 
 export type PersistedRecipeState = {
   recipes: Recipe[];
+  tags: Tag[];
   viewMode: ViewMode;
+  managementMode: boolean;
 };
 
 const defaultState: PersistedRecipeState = {
   recipes: [],
+  tags: [],
   viewMode: 'list',
+  managementMode: false,
 };
 
-function isRecipe(value: unknown): value is Recipe {
+function isTag(value: unknown): value is Tag {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const tag = value as Record<string, unknown>;
+  return typeof tag.id === 'string' && typeof tag.name === 'string';
+}
+
+function isLegacyRecipeShape(value: unknown): value is {
+  id: string;
+  name: string;
+  instructions: string;
+  createdAt: number;
+  tagIds?: unknown;
+} {
   if (!value || typeof value !== 'object') {
     return false;
   }
@@ -29,16 +48,26 @@ function isRecipe(value: unknown): value is Recipe {
   );
 }
 
-export async function saveRecipes(
-  recipes: Recipe[],
-  viewMode: ViewMode
-): Promise<void> {
-  const payload: PersistedRecipeState = {
-    recipes,
-    viewMode,
-  };
+function toRecipe(value: unknown): Recipe | null {
+  if (!isLegacyRecipeShape(value)) {
+    return null;
+  }
 
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  const tagIds = Array.isArray(value.tagIds)
+    ? value.tagIds.filter((item): item is string => typeof item === 'string')
+    : [];
+
+  return {
+    id: value.id,
+    name: value.name,
+    instructions: value.instructions,
+    createdAt: value.createdAt,
+    tagIds,
+  };
+}
+
+export async function saveRecipes(state: PersistedRecipeState): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 export async function loadRecipes(): Promise<PersistedRecipeState> {
@@ -50,14 +79,19 @@ export async function loadRecipes(): Promise<PersistedRecipeState> {
 
   try {
     const parsed = JSON.parse(rawValue) as Partial<PersistedRecipeState>;
+    const tags = Array.isArray(parsed.tags) ? parsed.tags.filter(isTag) : [];
     const recipes = Array.isArray(parsed.recipes)
-      ? parsed.recipes.filter(isRecipe)
+      ? parsed.recipes
+          .map((recipe) => toRecipe(recipe))
+          .filter((recipe): recipe is Recipe => recipe !== null)
       : [];
     const viewMode = parsed.viewMode === 'grid' ? 'grid' : 'list';
 
     return {
       recipes,
+      tags,
       viewMode,
+      managementMode: parsed.managementMode === true,
     };
   } catch {
     return defaultState;

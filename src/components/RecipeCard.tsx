@@ -37,15 +37,15 @@ export const RecipeCard = memo(RecipeCardComponent);
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#0F172A',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 3,
     },
     elevation: 1,
   },
@@ -53,14 +53,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listCard: {
-    minHeight: 64,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 56,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   gridCard: {
     aspectRatio: 1,
     flex: 1,
-    padding: 12,
+    minHeight: 140,
+    padding: 10,
   },
   listPressable: {
     justifyContent: 'center',
@@ -71,11 +72,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#0F172A',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   listTitle: {
-    fontSize: 17,
+    fontSize: 16,
   },
   gridTitle: {
     textAlign: 'center',
