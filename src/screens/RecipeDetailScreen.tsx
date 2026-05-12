@@ -27,8 +27,11 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
 
     const tagMap = new Map(tags.map((tag) => [tag.id, tag.name]));
     return recipe.tagIds
-      .map((tagId) => tagMap.get(tagId))
-      .filter((tagName): tagName is string => Boolean(tagName));
+      .map((tagId) => {
+        const name = tagMap.get(tagId);
+        return name ? { id: tagId, name } : null;
+      })
+      .filter((tag): tag is { id: string; name: string } => tag !== null);
   }, [recipe, tags]);
 
   useLayoutEffect(() => {
@@ -99,9 +102,9 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
         <Text style={styles.sectionTitle}>Tags</Text>
         {recipeTags.length > 0 ? (
           <View style={styles.tagRow}>
-            {recipeTags.map((tagName) => (
-              <View key={tagName} style={styles.tagChip}>
-                <Text style={styles.tagChipText}>{tagName}</Text>
+            {recipeTags.map((tag) => (
+              <View key={tag.id} style={styles.tagChip}>
+                <Text style={styles.tagChipText}>{tag.name}</Text>
               </View>
             ))}
           </View>
