@@ -8,7 +8,7 @@ type RecipeCardProps = {
   onPressRecipe: (recipeId: string) => void;
 };
 
-const GRID_CARD_ASPECT_RATIO = 1.02;
+const GRID_CARD_ASPECT_RATIO = 1;
 
 function RecipeCardComponent({
   recipeId,

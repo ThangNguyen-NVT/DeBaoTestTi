@@ -129,7 +129,6 @@ export function HomeScreen({ navigation }: Props) {
         removeClippedSubviews
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        windowSize={8}
       />
 
       <Pressable
