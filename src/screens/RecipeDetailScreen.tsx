@@ -2,15 +2,19 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { HeaderIconButton } from '../components/HeaderIconButton';
+import { TagChip } from '../components/TagChip';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useRecipeStore } from '../store/recipeStore';
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { fontSize, fontWeight } from '../theme/typography';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RecipeDetail'>;
 
 export function RecipeDetailScreen({ navigation, route }: Props) {
   const { recipeId } = route.params;
-  const managementMode = useRecipeStore((state) => state.managementMode);
-  const setManagementMode = useRecipeStore((state) => state.setManagementMode);
   const tags = useRecipeStore((state) => state.tags);
   const recipe = useRecipeStore(
     useCallback(
@@ -22,42 +26,17 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
 
   const recipeTags = useMemo(() => {
     if (!recipe) {
-      return [];
+      return [] as string[];
     }
 
     const tagMap = new Map(tags.map((tag) => [tag.id, tag.name]));
     return recipe.tagIds
-      .map((tagId) => {
-        const name = tagMap.get(tagId);
-        return name ? { id: tagId, name } : null;
-      })
-      .filter((tag): tag is { id: string; name: string } => tag !== null);
+      .map((tagId) => tagMap.get(tagId))
+      .filter((value): value is string => Boolean(value));
   }, [recipe, tags]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: recipe?.name ?? 'Recipe Detail',
-      headerRight: () => (
-        <Pressable
-          onPress={() => void setManagementMode(!managementMode)}
-          style={({ pressed }) => [styles.headerToggle, pressed && styles.buttonPressed]}
-        >
-          <Text style={styles.headerToggleLabel}>{managementMode ? 'Done' : 'Manage'}</Text>
-        </Pressable>
-      ),
-    });
-  }, [managementMode, navigation, recipe?.name, setManagementMode]);
-
   const handleEdit = useCallback(() => {
-    Alert.alert('Edit Recipe', 'Do you want to edit this recipe?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Edit',
-        onPress: () => {
-          navigation.navigate('AddEditRecipe', { recipeId });
-        },
-      },
-    ]);
+    navigation.navigate('AddEditRecipe', { recipeId });
   }, [navigation, recipeId]);
 
   const handleDelete = useCallback(() => {
@@ -74,16 +53,27 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
     ]);
   }, [deleteRecipe, navigation, recipeId]);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: recipe?.name ?? 'Recipe',
+      headerRight: () => (
+        <View style={styles.headerActions}>
+          <HeaderIconButton accessibilityLabel="Edit recipe" icon="✎" onPress={handleEdit} />
+          <HeaderIconButton accessibilityLabel="Delete recipe" icon="🗑" onPress={handleDelete} />
+        </View>
+      ),
+    });
+  }, [handleDelete, handleEdit, navigation, recipe?.name]);
+
   if (!recipe) {
     return (
       <View style={styles.missingContainer}>
         <Text style={styles.missingTitle}>Recipe not found</Text>
-        <Text style={styles.missingSubtitle}>
-          This recipe may have been deleted from your offline cookbook.
-        </Text>
+        <Text style={styles.missingSubtitle}>This recipe may have been deleted.</Text>
         <Pressable
+          accessibilityRole="button"
           onPress={() => navigation.popToTop()}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
         >
           <Text style={styles.primaryButtonText}>Back to Home</Text>
         </Pressable>
@@ -92,170 +82,116 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.heroCard}>
         <Text style={styles.title}>{recipe.name}</Text>
-        <Text style={styles.meta}>Created {new Date(recipe.createdAt).toLocaleString()}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tags</Text>
+        <Text style={styles.meta}>Created {new Date(recipe.createdAt).toLocaleDateString()}</Text>
         {recipeTags.length > 0 ? (
           <View style={styles.tagRow}>
-            {recipeTags.map((tag) => (
-              <View key={tag.id} style={styles.tagChip}>
-                <Text style={styles.tagChipText}>{tag.name}</Text>
-              </View>
+            {recipeTags.map((tagName) => (
+              <TagChip key={tagName} label={tagName} />
             ))}
           </View>
-        ) : (
-          <Text style={styles.emptyTagsText}>No tags attached</Text>
-        )}
+        ) : null}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Instructions</Text>
+      <View style={styles.instructionsCard}>
+        <Text style={styles.sectionLabel}>Instructions</Text>
         <Text style={styles.instructions}>{recipe.instructions}</Text>
       </View>
-
-      {managementMode && (
-        <View style={styles.actions}>
-          <Pressable
-            onPress={handleEdit}
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-          >
-            <Text style={styles.primaryButtonText}>Edit Recipe & Tags</Text>
-          </Pressable>
-          <Pressable
-            onPress={handleDelete}
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-          >
-            <Text style={styles.secondaryButtonText}>Delete Recipe</Text>
-          </Pressable>
-        </View>
-      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    gap: 12,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
   container: {
-    gap: 16,
-    padding: 16,
+    gap: spacing.s4,
+    padding: spacing.s4,
+    paddingBottom: spacing.s7,
   },
-  emptyTagsText: {
-    color: '#64748B',
-    fontSize: 14,
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.s1,
   },
   heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    gap: 8,
-    padding: 16,
-  },
-  headerToggle: {
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  headerToggleLabel: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '700',
+    gap: spacing.s2,
+    padding: spacing.s4,
   },
   instructions: {
-    color: '#334155',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.regular,
     lineHeight: 24,
   },
+  instructionsCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.s3,
+    padding: spacing.s4,
+  },
   meta: {
-    color: '#64748B',
-    fontSize: 14,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.regular,
   },
   missingContainer: {
     alignItems: 'center',
+    backgroundColor: colors.background,
     flex: 1,
-    gap: 12,
+    gap: spacing.s3,
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.s6,
   },
   missingSubtitle: {
-    color: '#64748B',
-    fontSize: 14,
-    lineHeight: 20,
+    color: colors.textTertiary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
     textAlign: 'center',
   },
   missingTitle: {
-    color: '#0F172A',
-    fontSize: 22,
-    fontWeight: '700',
+    color: colors.textPrimary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+  },
+  pressed: {
+    opacity: 0.8,
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    minHeight: 48,
+    minWidth: 120,
+    paddingHorizontal: spacing.s4,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.surface,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
   },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  secondaryButtonText: {
-    color: '#B91C1C',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 12,
-    padding: 16,
-  },
-  sectionTitle: {
-    color: '#0F172A',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  tagChip: {
-    backgroundColor: '#E2E8F0',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  tagChipText: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '700',
+  sectionLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.s2,
+    paddingTop: spacing.s1,
   },
   title: {
-    color: '#0F172A',
-    fontSize: 28,
-    fontWeight: '700',
+    color: colors.textPrimary,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
   },
 });

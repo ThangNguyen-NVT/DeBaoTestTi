@@ -1,6 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
-// Legacy API is used for stable async file read/write helpers in SDK 54.
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useCallback } from 'react';
@@ -10,6 +9,10 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useRecipeStore } from '../store/recipeStore';
 import type { ImportMode } from '../utils/importExport';
 import { validateCookbookImport } from '../utils/importExport';
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { fontSize, fontWeight } from '../theme/typography';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -143,32 +146,50 @@ export function SettingsScreen({ navigation }: Props) {
   }, [navigation, resetApp]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Data Management</Text>
-        <Text style={styles.cardSubtitle}>
-          Backup, restore, and transfer your cookbook safely.
-        </Text>
-
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Tags</Text>
         <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('TagsManagement')}
+          style={({ pressed }) => [styles.rowButton, pressed && styles.pressed]}
+        >
+          <View>
+            <Text style={styles.rowTitle}>Manage tags</Text>
+            <Text style={styles.rowSubtitle}>Create, rename, and delete labels</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Data</Text>
+        <Pressable
+          accessibilityRole="button"
           onPress={() => void handleExportData()}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [styles.rowButton, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryButtonText}>Export Data</Text>
+          <Text style={styles.rowTitle}>Export cookbook</Text>
+          <Text style={styles.chevron}>›</Text>
         </Pressable>
-
         <Pressable
+          accessibilityRole="button"
           onPress={() => void handleImportData()}
-          style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [styles.rowButton, pressed && styles.pressed]}
         >
-          <Text style={styles.secondaryButtonText}>Import Data</Text>
+          <Text style={styles.rowTitle}>Import cookbook</Text>
+          <Text style={styles.chevron}>›</Text>
         </Pressable>
+      </View>
 
+      <View style={styles.dangerCard}>
+        <Text style={styles.sectionTitle}>Danger Zone</Text>
         <Pressable
+          accessibilityRole="button"
           onPress={handleResetApp}
-          style={({ pressed }) => [styles.dangerButton, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [styles.dangerButton, pressed && styles.pressed]}
         >
-          <Text style={styles.dangerButtonText}>Reset App</Text>
+          <Text style={styles.dangerText}>Reset app</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -176,65 +197,76 @@ export function SettingsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 12,
-    padding: 16,
-  },
-  cardSubtitle: {
-    color: '#64748B',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  cardTitle: {
-    color: '#0F172A',
-    fontSize: 20,
-    fontWeight: '700',
+  chevron: {
+    color: colors.textMuted,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
   },
   container: {
-    gap: 12,
-    padding: 16,
+    gap: spacing.s4,
+    padding: spacing.s4,
+    paddingBottom: spacing.s7,
   },
   dangerButton: {
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: colors.dangerBackground,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: spacing.s3,
+    paddingVertical: spacing.s2,
   },
-  dangerButtonText: {
-    color: '#B91C1C',
-    fontSize: 15,
-    fontWeight: '700',
+  dangerCard: {
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.dangerBackground,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.s3,
+    padding: spacing.s4,
   },
-  primaryButton: {
+  dangerText: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  rowButton: {
     alignItems: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: spacing.s3,
+    paddingVertical: spacing.s2,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+  rowSubtitle: {
+    color: colors.textTertiary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
   },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  rowTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
   },
-  secondaryButtonText: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '700',
+  sectionCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.s3,
+    padding: spacing.s4,
+  },
+  sectionTitle: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 });

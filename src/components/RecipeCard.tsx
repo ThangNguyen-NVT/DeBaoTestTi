@@ -1,32 +1,56 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { fontSize, fontWeight } from '../theme/typography';
+import { TagChip } from './TagChip';
+
 type RecipeCardProps = {
-  recipeId: string;
-  name: string;
+  createdAt: number;
   isGrid: boolean;
+  name: string;
   onPressRecipe: (recipeId: string) => void;
+  recipeId: string;
+  tagNames: string[];
 };
 
 function RecipeCardComponent({
-  recipeId,
-  name,
+  createdAt,
   isGrid,
+  name,
   onPressRecipe,
+  recipeId,
+  tagNames,
 }: RecipeCardProps) {
+  const displayTags = tagNames.slice(0, isGrid ? 1 : 2);
+
   return (
     <View style={[styles.card, isGrid ? styles.gridCard : styles.listCard]}>
       <Pressable
+        accessibilityLabel={`Open recipe ${name}`}
+        accessibilityRole="button"
         onPress={() => onPressRecipe(recipeId)}
         style={({ pressed }) => [
-          styles.cardPressable,
+          styles.pressable,
           isGrid ? styles.gridPressable : styles.listPressable,
           pressed && styles.pressed,
         ]}
       >
-        <Text numberOfLines={2} style={[styles.title, isGrid ? styles.gridTitle : styles.listTitle]}>
+        <Text numberOfLines={2} style={[styles.title, isGrid && styles.gridTitle]}>
           {name}
         </Text>
+
+        {displayTags.length > 0 ? (
+          <View style={styles.tagRow}>
+            {displayTags.map((tagName) => (
+              <TagChip key={tagName} label={tagName} />
+            ))}
+          </View>
+        ) : null}
+
+        <Text style={styles.meta}>{new Date(createdAt).toLocaleDateString()}</Text>
       </Pressable>
     </View>
   );
@@ -36,52 +60,53 @@ export const RecipeCard = memo(RecipeCardComponent);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    elevation: 1,
-  },
-  cardPressable: {
-    flex: 1,
-  },
-  listCard: {
-    minHeight: 56,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: spacing.s1 },
+    shadowOpacity: 0.04,
+    shadowRadius: radius.sm,
   },
   gridCard: {
-    aspectRatio: 1,
     flex: 1,
-    minHeight: 140,
-    padding: 10,
-  },
-  listPressable: {
-    justifyContent: 'center',
+    minHeight: 160,
   },
   gridPressable: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  listTitle: {
-    fontSize: 16,
+    justifyContent: 'space-between',
+    minHeight: 160,
   },
   gridTitle: {
-    textAlign: 'center',
+    fontSize: fontSize.md,
+  },
+  listCard: {
+    minHeight: 96,
+  },
+  listPressable: {
+    gap: spacing.s2,
+    minHeight: 96,
+  },
+  meta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.regular,
+  },
+  pressable: {
+    gap: spacing.s2,
+    padding: spacing.s3,
   },
   pressed: {
-    opacity: 0.88,
+    opacity: 0.85,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.s2,
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
   },
 });
