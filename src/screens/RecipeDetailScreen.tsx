@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -9,7 +9,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'RecipeDetail'>;
 
 export function RecipeDetailScreen({ navigation, route }: Props) {
   const { recipeId } = route.params;
-  const [managementMode, setManagementMode] = useState(false);
+  const managementMode = useRecipeStore((state) => state.managementMode);
+  const setManagementMode = useRecipeStore((state) => state.setManagementMode);
+  const tags = useRecipeStore((state) => state.tags);
   const recipe = useRecipeStore(
     useCallback(
       (state) => state.recipes.find((item) => item.id === recipeId),
@@ -18,21 +20,30 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
   );
   const deleteRecipe = useRecipeStore((state) => state.deleteRecipe);
 
+  const recipeTags = useMemo(() => {
+    if (!recipe) {
+      return [];
+    }
+
+    const tagMap = new Map(tags.map((tag) => [tag.id, tag.name]));
+    return recipe.tagIds
+      .map((tagId) => tagMap.get(tagId))
+      .filter((tagName): tagName is string => Boolean(tagName));
+  }, [recipe, tags]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: recipe?.name ?? 'Recipe Detail',
       headerRight: () => (
         <Pressable
-          onPress={() => setManagementMode((previous) => !previous)}
+          onPress={() => void setManagementMode(!managementMode)}
           style={({ pressed }) => [styles.headerToggle, pressed && styles.buttonPressed]}
         >
-          <Text style={styles.headerToggleLabel}>
-            {managementMode ? 'Done' : 'Manage'}
-          </Text>
+          <Text style={styles.headerToggleLabel}>{managementMode ? 'Done' : 'Manage'}</Text>
         </Pressable>
       ),
     });
-  }, [managementMode, navigation, recipe?.name]);
+  }, [managementMode, navigation, recipe?.name, setManagementMode]);
 
   const handleEdit = useCallback(() => {
     Alert.alert('Edit Recipe', 'Do you want to edit this recipe?', [
@@ -69,10 +80,7 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
         </Text>
         <Pressable
           onPress={() => navigation.popToTop()}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.buttonPressed,
-          ]}
+          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
         >
           <Text style={styles.primaryButtonText}>Back to Home</Text>
         </Pressable>
@@ -84,9 +92,22 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.heroCard}>
         <Text style={styles.title}>{recipe.name}</Text>
-        <Text style={styles.meta}>
-          Created {new Date(recipe.createdAt).toLocaleString()}
-        </Text>
+        <Text style={styles.meta}>Created {new Date(recipe.createdAt).toLocaleString()}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Tags</Text>
+        {recipeTags.length > 0 ? (
+          <View style={styles.tagRow}>
+            {recipeTags.map((tagName) => (
+              <View key={tagName} style={styles.tagChip}>
+                <Text style={styles.tagChipText}>{tagName}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.emptyTagsText}>No tags attached</Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -98,19 +119,13 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
         <View style={styles.actions}>
           <Pressable
             onPress={handleEdit}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && styles.buttonPressed,
-            ]}
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
           >
-            <Text style={styles.primaryButtonText}>Edit Recipe</Text>
+            <Text style={styles.primaryButtonText}>Edit Recipe & Tags</Text>
           </Pressable>
           <Pressable
             onPress={handleDelete}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
+            style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
           >
             <Text style={styles.secondaryButtonText}>Delete Recipe</Text>
           </Pressable>
@@ -130,6 +145,10 @@ const styles = StyleSheet.create({
   container: {
     gap: 16,
     padding: 16,
+  },
+  emptyTagsText: {
+    color: '#64748B',
+    fontSize: 14,
   },
   heroCard: {
     backgroundColor: '#FFFFFF',
@@ -214,6 +233,22 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 18,
     fontWeight: '700',
+  },
+  tagChip: {
+    backgroundColor: '#E2E8F0',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  tagChipText: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   title: {
     color: '#0F172A',
