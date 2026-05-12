@@ -32,12 +32,14 @@ function persistState(state: PersistedRecipeState): Promise<void> {
 function getTagId(tags: Tag[], timestamp: number): string {
   const existingIds = new Set(tags.map((tag) => tag.id));
 
-  let nextId = `tag-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
-  while (existingIds.has(nextId)) {
-    nextId = `tag-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
+  const randomPart = Math.random().toString(36).slice(2, 8);
+  const nextId = `tag-${timestamp}-${tags.length + 1}-${randomPart}`;
+
+  if (!existingIds.has(nextId)) {
+    return nextId;
   }
 
-  return nextId;
+  return `tag-${timestamp}-${tags.length + 1}-${Date.now().toString(36)}`;
 }
 
 function buildState(state: RecipeStore): PersistedRecipeState {
