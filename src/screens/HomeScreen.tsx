@@ -129,7 +129,6 @@ export function HomeScreen({ navigation }: Props) {
         removeClippedSubviews
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        updateCellsBatchingPeriod={45}
         windowSize={8}
       />
 

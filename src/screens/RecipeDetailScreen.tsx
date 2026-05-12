@@ -46,17 +46,15 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
     ]);
   }, [navigation, recipeId]);
 
-  const handleDelete = useCallback(async () => {
+  const handleDelete = useCallback(() => {
     Alert.alert('Delete Recipe', 'Are you sure you want to delete this recipe?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            await deleteRecipe(recipeId);
-            navigation.popToTop();
-          })();
+        onPress: async () => {
+          await deleteRecipe(recipeId);
+          navigation.popToTop();
         },
       },
     ]);
