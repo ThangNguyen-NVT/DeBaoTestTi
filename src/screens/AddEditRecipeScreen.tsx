@@ -83,7 +83,7 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
     const trimmedName = name.trim();
     const trimmedInstructions = instructions.trim();
 
-    if (isSaving || !trimmedName || !trimmedInstructions || !managementMode) {
+    if (isSaving || !trimmedName || !trimmedInstructions) {
       return;
     }
 
@@ -118,7 +118,6 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
     addRecipe,
     instructions,
     isSaving,
-    managementMode,
     name,
     navigation,
     recipeId,

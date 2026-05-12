@@ -136,9 +136,9 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       return;
     }
 
-    const normalizedName = trimmedName.toLocaleLowerCase();
+    const normalizedName = trimmedName.toLowerCase();
     const hasDuplicate = get().tags.some(
-      (tag) => tag.name.trim().toLocaleLowerCase() === normalizedName
+      (tag) => tag.name.trim().toLowerCase() === normalizedName
     );
 
     if (hasDuplicate) {
@@ -165,9 +165,9 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       return;
     }
 
-    const normalizedName = trimmedName.toLocaleLowerCase();
+    const normalizedName = trimmedName.toLowerCase();
     const hasDuplicate = get().tags.some(
-      (tag) => tag.id !== id && tag.name.trim().toLocaleLowerCase() === normalizedName
+      (tag) => tag.id !== id && tag.name.trim().toLowerCase() === normalizedName
     );
 
     if (hasDuplicate) {
