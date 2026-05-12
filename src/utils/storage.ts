@@ -8,14 +8,12 @@ export type PersistedRecipeState = {
   recipes: Recipe[];
   tags: Tag[];
   viewMode: ViewMode;
-  managementMode: boolean;
 };
 
 const defaultState: PersistedRecipeState = {
   recipes: [],
   tags: [],
   viewMode: 'list',
-  managementMode: false,
 };
 
 function isTag(value: unknown): value is Tag {
@@ -91,7 +89,6 @@ export async function loadRecipes(): Promise<PersistedRecipeState> {
       recipes,
       tags,
       viewMode,
-      managementMode: parsed.managementMode === true,
     };
   } catch {
     return defaultState;

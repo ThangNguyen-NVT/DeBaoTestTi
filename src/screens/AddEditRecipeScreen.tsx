@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,9 +12,14 @@ import {
   View,
 } from 'react-native';
 
+import { TagChip } from '../components/TagChip';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useRecipeStore } from '../store/recipeStore';
 import type { Recipe } from '../types/recipe';
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { fontSize, fontWeight } from '../theme/typography';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddEditRecipe'>;
 
@@ -44,32 +50,40 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
     )
   );
   const tags = useRecipeStore((state) => state.tags);
-  const managementMode = useRecipeStore((state) => state.managementMode);
   const addRecipe = useRecipeStore((state) => state.addRecipe);
   const updateRecipe = useRecipeStore((state) => state.updateRecipe);
 
   const isEditing = Boolean(recipeId);
-  const [name, setName] = useState(recipe?.name ?? '');
-  const [instructions, setInstructions] = useState(recipe?.instructions ?? '');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(recipe?.tagIds ?? []);
+  const initialName = recipe?.name ?? '';
+  const initialInstructions = recipe?.instructions ?? '';
+  const initialTagIds = recipe?.tagIds ?? [];
+
+  const [name, setName] = useState(initialName);
+  const [instructions, setInstructions] = useState(initialInstructions);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setName(recipe?.name ?? '');
-    setInstructions(recipe?.instructions ?? '');
-    setSelectedTagIds(recipe?.tagIds ?? []);
-  }, [recipe?.instructions, recipe?.name, recipe?.tagIds]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: isEditing ? 'Edit Recipe' : 'Add Recipe',
-    });
-  }, [isEditing, navigation]);
+    setName(initialName);
+    setInstructions(initialInstructions);
+    setSelectedTagIds(initialTagIds);
+  }, [initialInstructions, initialName, initialTagIds]);
 
   const isSaveDisabled = useMemo(
     () => isSaving || !name.trim() || !instructions.trim(),
     [instructions, isSaving, name]
   );
+
+  const isDirty = useMemo(() => {
+    const initialTagSet = [...initialTagIds].sort().join('|');
+    const currentTagSet = [...selectedTagIds].sort().join('|');
+
+    return (
+      name !== initialName ||
+      instructions !== initialInstructions ||
+      currentTagSet !== initialTagSet
+    );
+  }, [initialInstructions, initialName, initialTagIds, instructions, name, selectedTagIds]);
 
   const toggleTag = useCallback((tagId: string) => {
     setSelectedTagIds((previous) =>
@@ -125,52 +139,73 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
     updateRecipe,
   ]);
 
-  if (!managementMode) {
-    return (
-      <View style={styles.missingContainer}>
-        <Text style={styles.missingTitle}>Management mode is off</Text>
-        <Text style={styles.missingSubtitle}>
-          Enable management mode from Home to create or edit recipes.
-        </Text>
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: isEditing ? 'Edit Recipe' : 'New Recipe',
+      headerRight: () => (
         <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+          accessibilityLabel="Save recipe"
+          accessibilityRole="button"
+          disabled={isSaveDisabled}
+          onPress={() => void handleSave()}
+          style={({ pressed }) => [
+            styles.headerSaveButton,
+            isSaveDisabled && styles.headerSaveButtonDisabled,
+            pressed && !isSaveDisabled && styles.pressed,
+          ]}
         >
-          <Text style={styles.primaryButtonText}>Go Back</Text>
+          <Text style={[styles.headerSaveText, isSaveDisabled && styles.headerSaveTextDisabled]}>
+            Save
+          </Text>
         </Pressable>
-      </View>
-    );
-  }
+      ),
+    });
+  }, [handleSave, isEditing, isSaveDisabled, navigation]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (!isDirty || isSaving) {
+        return;
+      }
+
+      event.preventDefault();
+
+      Alert.alert('Discard changes?', 'You have unsaved changes.', [
+        { text: 'Keep Editing', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            navigation.dispatch(event.data.action);
+          },
+        },
+      ]);
+    });
+
+    return unsubscribe;
+  }, [isDirty, isSaving, navigation]);
 
   if (isEditing && !recipe) {
     return (
       <View style={styles.missingContainer}>
         <Text style={styles.missingTitle}>Recipe not found</Text>
-        <Text style={styles.missingSubtitle}>
-          The recipe you are trying to edit is no longer available.
-        </Text>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-        >
-          <Text style={styles.primaryButtonText}>Go Back</Text>
-        </Pressable>
+        <Text style={styles.missingSubtitle}>The recipe you are trying to edit is no longer available.</Text>
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.flex}
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Recipe Name</Text>
+          <Text style={styles.label}>Name</Text>
           <TextInput
             onChangeText={setName}
-            placeholder="e.g. Trứng chiên hành"
-            placeholderTextColor="#94A3B8"
+            placeholder="Recipe name"
+            placeholderTextColor={colors.textMuted}
             style={styles.input}
             value={name}
           />
@@ -181,179 +216,122 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
           <TextInput
             multiline
             onChangeText={setInstructions}
-            placeholder="Write each step clearly so it is easy to follow offline."
-            placeholderTextColor="#94A3B8"
+            placeholder="Write each step clearly for easy offline cooking."
+            placeholderTextColor={colors.textMuted}
             style={[styles.input, styles.instructionsInput]}
             textAlignVertical="top"
             value={instructions}
           />
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Tags (optional)</Text>
-          <View style={styles.tagRow}>
-            {tags.map((tag) => {
-              const isSelected = selectedTagIds.includes(tag.id);
-
-              return (
-                <Pressable
-                  key={tag.id}
-                  onPress={() => toggleTag(tag.id)}
-                  style={({ pressed }) => [
-                    styles.tagChip,
-                    isSelected && styles.tagChipSelected,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tagChipLabel,
-                      isSelected && styles.tagChipLabelSelected,
-                    ]}
-                  >
-                    {tag.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-            {tags.length === 0 && (
-              <Text style={styles.emptyTagHint}>
-                No tags yet. You can create tags from Home in management mode.
-              </Text>
-            )}
+        {tags.length > 0 ? (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Tags</Text>
+            <View style={styles.tagRow}>
+              {tags.map((tag) => {
+                const isSelected = selectedTagIds.includes(tag.id);
+                return (
+                  <TagChip
+                    key={tag.id}
+                    label={tag.name}
+                    onPress={() => toggleTag(tag.id)}
+                    selected={isSelected}
+                  />
+                );
+              })}
+            </View>
           </View>
-        </View>
-
-        <View style={styles.actionRow}>
-          <Pressable
-            disabled={isSaveDisabled}
-            onPress={() => void handleSave()}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              isSaveDisabled && styles.primaryButtonDisabled,
-              pressed && !isSaveDisabled && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.primaryButtonText}>
-              {isEditing ? 'Save Changes' : 'Create Recipe'}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-          >
-            <Text style={styles.secondaryButtonText}>Cancel</Text>
-          </Pressable>
-        </View>
+        ) : (
+          <Text style={styles.emptyTagHint}>No tags yet. Create tags from Settings.</Text>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  actionRow: {
-    gap: 12,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
   container: {
-    gap: 16,
-    padding: 16,
+    gap: spacing.s4,
+    padding: spacing.s4,
+    paddingBottom: spacing.s7,
   },
   emptyTagHint: {
-    color: '#64748B',
-    fontSize: 13,
+    color: colors.textTertiary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
   },
   fieldGroup: {
-    gap: 8,
+    gap: spacing.s2,
   },
   flex: {
+    backgroundColor: colors.background,
     flex: 1,
   },
+  headerSaveButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: spacing.s2,
+  },
+  headerSaveButtonDisabled: {
+    opacity: 0.5,
+  },
+  headerSaveText: {
+    color: colors.primary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+  },
+  headerSaveTextDisabled: {
+    color: colors.textMuted,
+  },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
-    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    color: '#0F172A',
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.regular,
+    minHeight: 48,
+    paddingHorizontal: spacing.s3,
+    paddingVertical: spacing.s2,
   },
   instructionsInput: {
-    minHeight: 180,
+    minHeight: 220,
   },
   label: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '600',
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   missingContainer: {
     alignItems: 'center',
+    backgroundColor: colors.background,
     flex: 1,
-    gap: 12,
+    gap: spacing.s2,
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.s6,
   },
   missingSubtitle: {
-    color: '#64748B',
-    fontSize: 14,
-    lineHeight: 20,
+    color: colors.textTertiary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
     textAlign: 'center',
   },
   missingTitle: {
-    color: '#0F172A',
-    fontSize: 22,
-    fontWeight: '700',
+    color: colors.textPrimary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
   },
-  primaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#93C5FD',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  secondaryButtonText: {
-    color: '#0F172A',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  tagChip: {
-    backgroundColor: '#E2E8F0',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  tagChipLabel: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  tagChipLabelSelected: {
-    color: '#FFFFFF',
-  },
-  tagChipSelected: {
-    backgroundColor: '#2563EB',
+  pressed: {
+    opacity: 0.8,
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.s2,
   },
 });

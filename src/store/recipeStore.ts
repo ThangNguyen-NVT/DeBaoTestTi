@@ -9,12 +9,10 @@ type RecipeStore = {
   recipes: Recipe[];
   tags: Tag[];
   viewMode: ViewMode;
-  managementMode: boolean;
   addRecipe: (recipe: Recipe) => Promise<void>;
   updateRecipe: (id: string, data: RecipeDraft) => Promise<void>;
   deleteRecipe: (id: string) => Promise<void>;
   setViewMode: (mode: ViewMode) => Promise<void>;
-  setManagementMode: (enabled: boolean) => Promise<void>;
   addTag: (name: string) => Promise<void>;
   renameTag: (id: string, name: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
@@ -52,7 +50,6 @@ function buildState(state: RecipeStore): PersistedRecipeState {
     recipes: state.recipes,
     tags: state.tags,
     viewMode: state.viewMode,
-    managementMode: state.managementMode,
   };
 }
 
@@ -101,7 +98,6 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
   recipes: [],
   tags: [],
   viewMode: 'list',
-  managementMode: false,
   hydrate: async () => {
     const persistedState = await loadRecipes();
     set({
@@ -149,15 +145,6 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
     const nextState: PersistedRecipeState = {
       ...buildState(get()),
       viewMode: mode,
-    };
-
-    set(nextState);
-    await persistState(nextState);
-  },
-  setManagementMode: async (enabled) => {
-    const nextState: PersistedRecipeState = {
-      ...buildState(get()),
-      managementMode: enabled,
     };
 
     set(nextState);
@@ -266,7 +253,6 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       recipes: [],
       tags: [],
       viewMode: 'list',
-      managementMode: false,
     };
 
     set(nextState);
