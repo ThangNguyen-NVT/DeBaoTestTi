@@ -124,7 +124,6 @@ export function HomeScreen({ navigation }: Props) {
         data={sortedRecipes}
         keyExtractor={keyExtractor}
         ListEmptyComponent={EmptyState}
-        maxToRenderPerBatch={10}
         numColumns={isGrid ? 2 : 1}
         removeClippedSubviews
         renderItem={renderItem}
