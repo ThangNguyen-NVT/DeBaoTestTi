@@ -4,12 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 type RecipeCardProps = {
   recipeId: string;
   name: string;
-  instructions: string;
-  createdAt: number;
   isGrid: boolean;
-  showManagementActions?: boolean;
   onPressRecipe: (recipeId: string) => void;
-  onDeleteRecipe: (recipeId: string) => void;
 };
 
 function RecipeCardComponent({
@@ -41,29 +37,25 @@ export const RecipeCard = memo(RecipeCardComponent);
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#0F172A',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
-    elevation: 2,
+    elevation: 1,
   },
   cardPressable: {
     flex: 1,
   },
   gridCard: {
-    aspectRatio: 1,
-    flexBasis: '48%',
-    flexGrow: 0,
-    flexShrink: 0,
-    maxWidth: '48%',
-    minHeight: 150,
+    aspectRatio: 1.02,
+    flex: 1,
+    padding: 12,
   },
   gridPressable: {
     alignItems: 'center',
@@ -72,21 +64,23 @@ const styles = StyleSheet.create({
   gridTitle: {
     textAlign: 'center',
   },
-  listCard: {
-    minHeight: 84,
-  },
-  listPressable: {
-    justifyContent: 'center',
-  },
   listTitle: {
-    fontSize: 18,
+    fontSize: 17,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.88,
   },
   title: {
     color: '#0F172A',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
+  },
+  listCard: {
+    minHeight: 64,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  listPressable: {
+    justifyContent: 'center',
   },
 });

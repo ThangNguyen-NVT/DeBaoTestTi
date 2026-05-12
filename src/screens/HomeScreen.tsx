@@ -28,7 +28,6 @@ const EmptyState = () => (
 export function HomeScreen({ navigation }: Props) {
   const recipes = useRecipeStore((state) => state.recipes);
   const viewMode = useRecipeStore((state) => state.viewMode);
-  const deleteRecipe = useRecipeStore((state) => state.deleteRecipe);
   const setViewMode = useRecipeStore((state) => state.setViewMode);
 
   const sortedRecipes = useMemo(
@@ -42,13 +41,6 @@ export function HomeScreen({ navigation }: Props) {
       navigation.navigate('RecipeDetail', { recipeId });
     },
     [navigation]
-  );
-
-  const handleDeleteRecipe = useCallback(
-    (recipeId: string) => {
-      void deleteRecipe(recipeId);
-    },
-    [deleteRecipe]
   );
 
   const handleAddRecipe = useCallback(() => {
@@ -68,16 +60,13 @@ export function HomeScreen({ navigation }: Props) {
   const renderItem = useCallback<ListRenderItem<Recipe>>(
     ({ item }) => (
       <RecipeCard
-        createdAt={item.createdAt}
-        instructions={item.instructions}
         isGrid={isGrid}
         name={item.name}
-        onDeleteRecipe={handleDeleteRecipe}
         onPressRecipe={handleOpenRecipe}
         recipeId={item.id}
       />
     ),
-    [handleDeleteRecipe, handleOpenRecipe, isGrid]
+    [handleOpenRecipe, isGrid]
   );
 
   return (
@@ -135,9 +124,13 @@ export function HomeScreen({ navigation }: Props) {
         data={sortedRecipes}
         keyExtractor={keyExtractor}
         ListEmptyComponent={EmptyState}
+        maxToRenderPerBatch={10}
         numColumns={isGrid ? 2 : 1}
+        removeClippedSubviews
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
+        updateCellsBatchingPeriod={45}
+        windowSize={8}
       />
 
       <Pressable
@@ -154,8 +147,8 @@ export function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 14,
+    paddingTop: 14,
   },
   emptyContent: {
     flexGrow: 1,
@@ -206,8 +199,8 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   gridRow: {
-    gap: 12,
-    justifyContent: 'space-between',
+    columnGap: 10,
+    justifyContent: 'flex-start',
   },
   header: {
     alignItems: 'center',
@@ -216,7 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   listContent: {
-    gap: 12,
+    gap: 8,
     paddingBottom: 96,
   },
   subtitle: {

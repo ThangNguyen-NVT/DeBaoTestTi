@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useLayoutEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useLayoutEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useRecipeStore } from '../store/recipeStore';
@@ -9,6 +9,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'RecipeDetail'>;
 
 export function RecipeDetailScreen({ navigation, route }: Props) {
   const { recipeId } = route.params;
+  const [managementMode, setManagementMode] = useState(false);
   const recipe = useRecipeStore(
     useCallback(
       (state) => state.recipes.find((item) => item.id === recipeId),
@@ -20,16 +21,45 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: recipe?.name ?? 'Recipe Detail',
+      headerRight: () => (
+        <Pressable
+          onPress={() => setManagementMode((previous) => !previous)}
+          style={({ pressed }) => [styles.headerToggle, pressed && styles.buttonPressed]}
+        >
+          <Text style={styles.headerToggleLabel}>
+            {managementMode ? 'Done' : 'Manage'}
+          </Text>
+        </Pressable>
+      ),
     });
-  }, [navigation, recipe?.name]);
+  }, [managementMode, navigation, recipe?.name]);
 
   const handleEdit = useCallback(() => {
-    navigation.navigate('AddEditRecipe', { recipeId });
+    Alert.alert('Edit Recipe', 'Do you want to edit this recipe?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Edit',
+        onPress: () => {
+          navigation.navigate('AddEditRecipe', { recipeId });
+        },
+      },
+    ]);
   }, [navigation, recipeId]);
 
   const handleDelete = useCallback(async () => {
-    await deleteRecipe(recipeId);
-    navigation.popToTop();
+    Alert.alert('Delete Recipe', 'Are you sure you want to delete this recipe?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            await deleteRecipe(recipeId);
+            navigation.popToTop();
+          })();
+        },
+      },
+    ]);
   }, [deleteRecipe, navigation, recipeId]);
 
   if (!recipe) {
@@ -66,26 +96,28 @@ export function RecipeDetailScreen({ navigation, route }: Props) {
         <Text style={styles.instructions}>{recipe.instructions}</Text>
       </View>
 
-      <View style={styles.actions}>
-        <Pressable
-          onPress={handleEdit}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.primaryButtonText}>Edit Recipe</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => void handleDelete()}
-          style={({ pressed }) => [
-            styles.secondaryButton,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.secondaryButtonText}>Delete Recipe</Text>
-        </Pressable>
-      </View>
+      {managementMode && (
+        <View style={styles.actions}>
+          <Pressable
+            onPress={handleEdit}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>Edit Recipe</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void handleDelete()}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.secondaryButtonText}>Delete Recipe</Text>
+          </Pressable>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -108,6 +140,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
     padding: 16,
+  },
+  headerToggle: {
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  headerToggleLabel: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
   },
   instructions: {
     color: '#334155',
