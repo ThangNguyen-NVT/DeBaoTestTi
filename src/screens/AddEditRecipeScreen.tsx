@@ -49,6 +49,7 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
   const isEditing = Boolean(recipeId);
   const [name, setName] = useState(recipe?.name ?? '');
   const [instructions, setInstructions] = useState(recipe?.instructions ?? '');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setName(recipe?.name ?? '');
@@ -62,38 +63,52 @@ export function AddEditRecipeScreen({ navigation, route }: Props) {
   }, [isEditing, navigation]);
 
   const isSaveDisabled = useMemo(
-    () => !name.trim() || !instructions.trim(),
-    [instructions, name]
+    () => isSaving || !name.trim() || !instructions.trim(),
+    [instructions, isSaving, name]
   );
 
   const handleSave = useCallback(async () => {
     const trimmedName = name.trim();
     const trimmedInstructions = instructions.trim();
 
-    if (!trimmedName || !trimmedInstructions) {
+    if (isSaving || !trimmedName || !trimmedInstructions) {
       return;
     }
 
-    if (recipeId) {
-      await updateRecipe(recipeId, {
+    setIsSaving(true);
+
+    try {
+      if (recipeId) {
+        await updateRecipe(recipeId, {
+          name: trimmedName,
+          instructions: trimmedInstructions,
+        });
+        navigation.goBack();
+        return;
+      }
+
+      const nextRecipeId = createRecipeId(useRecipeStore.getState().recipes);
+
+      await addRecipe({
+        id: nextRecipeId,
         name: trimmedName,
         instructions: trimmedInstructions,
+        createdAt: Date.now(),
       });
-      navigation.goBack();
-      return;
+
+      navigation.replace('RecipeDetail', { recipeId: nextRecipeId });
+    } finally {
+      setIsSaving(false);
     }
-
-    const nextRecipeId = createRecipeId(useRecipeStore.getState().recipes);
-
-    await addRecipe({
-      id: nextRecipeId,
-      name: trimmedName,
-      instructions: trimmedInstructions,
-      createdAt: Date.now(),
-    });
-
-    navigation.replace('RecipeDetail', { recipeId: nextRecipeId });
-  }, [addRecipe, instructions, name, navigation, recipeId, updateRecipe]);
+  }, [
+    addRecipe,
+    instructions,
+    isSaving,
+    name,
+    navigation,
+    recipeId,
+    updateRecipe,
+  ]);
 
   if (isEditing && !recipe) {
     return (
